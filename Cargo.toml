@@ -4,4 +4,4 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-sdl2 = { git = "https://github.com/Rust-SDL2/rust-sdl2" }
+sdl2 = { git = "https://github.com/Rust-SDL2/rust-sdl2", features = ["ttf"] }
