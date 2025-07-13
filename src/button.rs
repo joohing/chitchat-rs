@@ -5,7 +5,7 @@ pub trait Drawable {
 }
 
 pub trait PosDrawable {
-    fn draw(&self, canvas: &mut Canvas<Window>, pos: Point);
+    fn draw(&self, canvas: &mut Canvas<Window>, hidpi_scale: u32, pos: Point);
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -43,12 +43,13 @@ impl Button {
 }
 
 impl PosDrawable for Button {
-    fn draw(&self, canvas: &mut Canvas<Window>, pos: Point) {
+    fn draw(&self, canvas: &mut Canvas<Window>, hidpi_scale: u32, pos: Point) {
+        let (s_u, s_i) = (hidpi_scale as u32, hidpi_scale as i32);
         let previous_color = canvas.draw_color();
         if let Some(c) = self.color {
             canvas.set_draw_color(c);
         }
-        let res = canvas.fill_rect(Rect::new(pos.x, pos.y, self.w, self.h));
+        let res = canvas.fill_rect(Rect::new(pos.x, pos.y, self.w * s_u, self.h * s_u));
         canvas.set_draw_color(previous_color);
         if res.is_err() {
             panic!("{:?}", res.unwrap());

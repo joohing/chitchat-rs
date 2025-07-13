@@ -60,8 +60,7 @@ impl Bar {
 
 impl Drawable for Bar {
     fn draw(&self, canvas: &mut Canvas<Window>, hidpi_scale: u32) {
-        let s_u = hidpi_scale as u32;
-        let s_i = hidpi_scale as i32;
+        let (s_u, s_i) = (hidpi_scale as u32, hidpi_scale as i32);
         let previous_color = canvas.draw_color();
         if let Some(c) = self.color {
             canvas.set_draw_color(c);
@@ -76,13 +75,13 @@ impl Drawable for Bar {
             panic!("{:?}", res.unwrap());
         }
         let mut curr_point = Point::new(
-            self.pos.x + self.padding as i32 * s_i,
-            self.pos.y + self.padding as i32 * s_i
+            (self.pos.x + self.padding as i32) * s_i,
+            (self.pos.y + self.padding as i32) * s_i
         );
         for b in &self.buttons {
             let curr_color = canvas.draw_color();
             if let Some(c) = b.color { canvas.set_draw_color(c); }
-            b.draw(canvas, curr_point);
+            b.draw(canvas, s_u, curr_point);
             canvas.set_draw_color(curr_color);
             curr_point += Point::new((b.w + self.padding) as i32 * s_i, 0);
         }
@@ -94,7 +93,7 @@ pub fn mouse_within_button(
     mouse_x: i32,
     mouse_y: i32,
     button_pos: Point,
-    button: &Button,
+    button: &Button
 ) -> bool {
     mouse_x >= button_pos.x
         && mouse_x <= button_pos.x + button.w as i32
