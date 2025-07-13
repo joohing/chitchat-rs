@@ -35,7 +35,7 @@ pub fn main() {
     let mut bar = Bar::sample();
 
     let font_context = sdl2::ttf::init().expect("failed to create font context");
-    let path = Path::new("/System/Library/Fonts/Supplemental/Andale Mono.ttf");
+    let path = Path::new("fonts/Andale Mono.ttf");
     let font = font_context.load_font(path, 30).expect("couldn't load font");
     let sk_rizz = font.render("skibidi rizz");
     let sk_surface = sk_rizz.solid(Color::BLACK).expect("couldn't render solid font");
