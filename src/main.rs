@@ -2,6 +2,7 @@ extern crate sdl2;
 
 mod button;
 mod bar;
+mod chat_client;
 
 use sdl2::pixels::Color;
 use sdl2::event::{Event, WindowEvent};

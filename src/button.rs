@@ -1,4 +1,9 @@
-use sdl2::{pixels::Color, render::Canvas, video::Window, rect::{Rect, Point}};
+use sdl2::{
+    pixels::Color,
+    rect::{Point, Rect},
+    render::Canvas,
+    video::Window,
+};
 
 pub trait Drawable {
     fn draw(&self, canvas: &mut Canvas<Window>, hidpi_scale: u32);
@@ -8,6 +13,19 @@ pub trait PosDrawable {
     fn draw(&self, canvas: &mut Canvas<Window>, hidpi_scale: u32, pos: Point);
 }
 
+pub trait Hoverable {
+    fn hover(&mut self);
+    fn mouse_off(&mut self);
+}
+
+pub trait Clickable {
+    fn click(&mut self);
+}
+
+pub trait AsyncClickable {
+    async fn click(&mut self);
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct Button {
     pub w: u32,
@@ -15,30 +33,21 @@ pub struct Button {
     pub color: Option<Color>,
     orig_color: Option<Color>,
     pub is_hovering: bool,
-    pub hover: Option<fn(&mut Button) -> ()>,
-    pub mouse_off: Option<fn(&mut Button) -> ()>,
-    pub click: Option<fn(&mut Button) -> ()>,
 }
 
 impl Button {
-    pub fn new(
-        w: u32,
-        h: u32,
-        color: Option<Color>,
-        hover: Option<fn(&mut Button) -> ()>,
-        mouse_off: Option<fn(&mut Button) -> ()>,
-        click: Option<fn(&mut Button) -> ()>
-    ) -> Button {
-        Button { w, h, color, orig_color: color, is_hovering: false, hover, mouse_off, click }
+    pub fn new(w: u32, h: u32, color: Option<Color>) -> Button {
+        Button {
+            w,
+            h,
+            color,
+            orig_color: color,
+            is_hovering: false,
+        }
     }
 
     pub fn sample() -> Button {
-        Button::new(25, 10,
-            Some(sdl2::pixels::Color::GRAY),
-            Some(button_darken_on_hover),
-            Some(button_restore_color),
-            Some(button_print_on_click)
-        )
+        Button::new(25, 10, Some(sdl2::pixels::Color::GRAY))
     }
 }
 
@@ -57,9 +66,29 @@ impl PosDrawable for Button {
     }
 }
 
-pub fn button_print_on_click(b: &mut Button) { println!("Clicked!"); }
+impl Hoverable for Button {
+    fn hover(&mut self) {
+        button_darken_on_hover(self);
+    }
 
-pub fn button_print_on_hover(b: &mut Button) { println!("Hover!"); }
+    fn mouse_off(&mut self) {
+        button_restore_color(self);
+    }
+}
+
+impl Clickable for Button {
+    fn click(&mut self) {
+        button_print_on_click(self);
+    }
+}
+
+pub fn button_print_on_click(b: &mut Button) {
+    println!("Clicked!");
+}
+
+pub fn button_print_on_hover(b: &mut Button) {
+    println!("Hover!");
+}
 
 pub fn button_darken_on_hover(b: &mut Button) {
     b.is_hovering = true;
