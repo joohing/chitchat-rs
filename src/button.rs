@@ -51,7 +51,7 @@ impl Buttons {
         Buttons::new(25, 10, Some(sdl2::pixels::Color::GRAY))
     }
 
-    pub fn set_hovering(&mut self, s: bool) {
+    fn set_hovering(&mut self, s: bool) {
         match self {
             Buttons::Button(b) => b.is_hovering = s,
             Buttons::SendButton(b) => b.is_hovering = s,
@@ -137,7 +137,7 @@ impl SendButton {
 }
 
 impl Buttons {
-    pub fn hover(&mut self, _: Point) {
+    pub fn hover(&mut self, _: i32, _: i32) {
         button_darken_on_hover(self);
     }
 
@@ -173,6 +173,7 @@ pub fn button_darken_on_hover(b: &mut Buttons) {
 }
 
 pub fn button_restore_color(b: &mut Buttons) {
+    b.set_hovering(false);
     if b.get_color().is_some() {
         b.set_color(b.get_orig_color());
     }

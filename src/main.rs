@@ -3,7 +3,9 @@ extern crate sdl2;
 mod button;
 mod bar;
 mod chat_client;
+mod layout;
 
+use layout::Layout;
 use sdl2::pixels::Color;
 use sdl2::event::{Event, WindowEvent};
 use sdl2::keyboard::Keycode;
@@ -12,7 +14,6 @@ use sdl2::rect::Point;
 use sdl2::rect::Rect;
 use std::path::Path;
 use std::time::Duration;
-use bar::*;
 
 #[tokio::main]
 pub async fn main() -> reqwest::Result<()> {
@@ -33,7 +34,7 @@ pub async fn main() -> reqwest::Result<()> {
     canvas.present();
     let mut event_pump = sdl_context.event_pump().unwrap();
 
-    let mut bar = Bar::sample();
+    let mut layout = Layout::sample();
 
     let font_context = sdl2::ttf::init().expect("failed to create font context");
     let path = Path::new("fonts/Andale Mono.ttf");
@@ -60,10 +61,10 @@ pub async fn main() -> reqwest::Result<()> {
                     break 'running
                 },
                 Event::MouseMotion { x, y, .. } => {
-                    bar.hover(Point::new(x, y));
+                    layout.hover(x, y);
                 }
                 Event::MouseButtonDown { mouse_btn: MouseButton::Left, x, y, .. } => {
-                    bar.click(Point::new(x, y)).await?;
+                    layout.click(Point::new(x, y)).await?;
                 }
                 Event::Window { win_event: WindowEvent::Resized(_, _), .. } => {
                     (render_width, render_height) = canvas.window().drawable_size();
@@ -75,10 +76,10 @@ pub async fn main() -> reqwest::Result<()> {
             }
         }
 
-        bar.draw(&mut canvas, hidpi_scale);
+        layout.draw(&mut canvas, hidpi_scale);
 
         canvas.present();
-        ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
+        std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
     }
 
     Ok(())

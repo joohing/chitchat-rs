@@ -9,11 +9,10 @@ use sdl2::{
 };
 
 #[derive(Debug, Clone)]
-/// Bunch of synchronous buttons
 pub struct Bar {
     pub pos: Point,
-    w: u32,
-    h: u32,
+    pub w: u32,
+    pub h: u32,
     pub padding: u32,
     pub color: Option<Color>,
     orig_color: Option<Color>,
@@ -54,6 +53,12 @@ impl Bar {
                  Buttons::sample()],
         )
     }
+
+    pub fn unhover(&mut self) {
+        for b in self.buttons.iter_mut() {
+            b.mouse_off();
+        }
+    }
 }
 
 impl Bar {
@@ -87,19 +92,15 @@ impl Bar {
         }
         canvas.set_draw_color(previous_color);
     }
-}
 
-impl Bar {
-    pub fn hover(&mut self, pos: Point) {
-        sample_hover(pos, self);
+    pub fn hover(&mut self, x: i32, y: i32) {
+        sample_hover(x, y, self);
     }
 
     fn mouse_off(&mut self) {
         todo!()
     }
-}
 
-impl Bar {
     pub async fn click(&mut self, mouse_pos: Point) -> reqwest::Result<()> {
         sample_click(mouse_pos, self).await?;
         Ok(())
@@ -113,20 +114,18 @@ pub fn mouse_within_button(mouse_x: i32, mouse_y: i32, button_pos: Point, button
         && mouse_y <= button_pos.y + button.get_h() as i32
 }
 
-pub fn sample_hover(mouse_pos: Point, bar: &mut Bar) {
+pub fn sample_hover(x: i32, y: i32, bar: &mut Bar) {
     let mut curr_button_location = Point::new(
         bar.pos.x + bar.padding as i32,
         bar.pos.y + bar.padding as i32,
     );
     for b in bar.buttons.iter_mut() {
-        let mouse_is_over = mouse_within_button(mouse_pos.x, mouse_pos.y, curr_button_location, &b);
+        let mouse_is_over = mouse_within_button(x, y, curr_button_location, &b);
         let mouse_on = mouse_is_over && !b.get_hovering();
         let mouse_off = !mouse_is_over && b.get_hovering();
         if mouse_on {
-            b.set_hovering(true);
-            b.hover(mouse_pos);
+            b.hover(x, y);
         } else if mouse_off {
-            b.set_hovering(false);
             b.mouse_off();
         }
         curr_button_location += Point::new((b.get_w() + bar.padding) as i32, 0);
