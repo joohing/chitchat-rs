@@ -4,6 +4,7 @@ pub trait Messenger {
     async fn send_message_to(&self, recv: User, msg: String) -> Result<Response, Error>;
 }
 
+#[derive(Debug, Clone)]
 pub struct User {
     username: String,
     addr: String,

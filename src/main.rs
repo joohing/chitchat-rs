@@ -12,10 +12,10 @@ use sdl2::rect::Point;
 use sdl2::rect::Rect;
 use std::path::Path;
 use std::time::Duration;
-use button::*;
 use bar::*;
 
-pub fn main() {
+#[tokio::main]
+pub async fn main() -> reqwest::Result<()> {
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
 
@@ -60,10 +60,10 @@ pub fn main() {
                     break 'running
                 },
                 Event::MouseMotion { x, y, .. } => {
-                    if let Some(f) = bar.hover { f(Point::new(x, y), &mut bar); }
+                    bar.hover(Point::new(x, y));
                 }
                 Event::MouseButtonDown { mouse_btn: MouseButton::Left, x, y, .. } => {
-                    if let Some(f) = bar.click { f(Point::new(x, y), &mut bar); }
+                    bar.click(Point::new(x, y)).await?;
                 }
                 Event::Window { win_event: WindowEvent::Resized(_, _), .. } => {
                     (render_width, render_height) = canvas.window().drawable_size();
@@ -80,4 +80,6 @@ pub fn main() {
         canvas.present();
         ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
     }
+
+    Ok(())
 }
