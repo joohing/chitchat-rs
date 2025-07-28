@@ -4,6 +4,7 @@ mod button;
 mod bar;
 mod chat_client;
 mod layout;
+mod text;
 
 use layout::Layout;
 use sdl2::pixels::Color;

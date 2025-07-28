@@ -1,13 +1,15 @@
 #![allow(dead_code)]
 
+use std::path::Path;
+
 use sdl2::{
     pixels::Color,
-    rect::{Point, Rect},
-    render::Canvas,
-    video::Window,
+ rect::{Point, Rect},
+ render::Canvas,
+ ttf::{Font, Sdl2TtfContext}, video::Window
 };
 
-use crate::chat_client::User;
+use crate::{chat_client::User, text::Text};
 
 #[derive(Debug, Clone)]
 pub enum Buttons {
@@ -37,7 +39,7 @@ pub struct SendButton {
 }
 
 impl Buttons {
-    pub fn new(w: u32, h: u32, color: Option<Color>) -> Buttons {
+    pub fn new(w: u32, h: u32, color: Option<Color>, text: Option<Text>) -> Buttons {
         Buttons::Button(Button {
             w,
             h,
@@ -48,7 +50,13 @@ impl Buttons {
     }
 
     pub fn sample() -> Buttons {
-        Buttons::new(25, 10, Some(sdl2::pixels::Color::GRAY))
+        Buttons::new(25, 10, Some(sdl2::pixels::Color::GRAY), None)
+    }
+
+    pub fn send_button(font_context: &'static Sdl2TtfContext) -> Buttons {
+        let path = Path::new("fonts/Andale Mono.ttf");
+        let font = font_context.load_font(path, 30).expect("couldn't load font");
+        Buttons::new(25, 10, Some(sdl2::pixels::Color::GRAY), Some(Text::new(font, 12, "Send".to_string())))
     }
 
     fn set_hovering(&mut self, s: bool) {
