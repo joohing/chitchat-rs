@@ -59,9 +59,7 @@ impl Bar {
             b.mouse_off();
         }
     }
-}
 
-impl Bar {
     pub fn draw(&self, canvas: &mut Canvas<Window>, hidpi_scale: u32) {
         let (s_u, s_i) = (hidpi_scale as u32, hidpi_scale as i32);
         let previous_color = canvas.draw_color();

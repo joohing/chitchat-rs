@@ -1,13 +1,21 @@
 use sdl2::{rect::Point, render::Canvas, video::Window};
 
+use crate::button::Buttons;
 use crate::bar::Bar;
+use crate::User;
+use sdl2::ttf::Sdl2TtfContext;
 
 pub struct Layout {
+    user: User,
     bars: Vec<Bar>,
 }
 
 impl Layout {
-    pub fn sample() -> Self {
+    pub fn new(user: User, bars: Vec<Bar>) -> Self {
+        Self { user, bars }
+    }
+
+    pub fn sample(user: User) -> Self {
         let _1 = Bar::sample();
         let Bar {
             pos,
@@ -17,8 +25,11 @@ impl Layout {
             ..
         } = Bar::sample();
         let _2 = Bar::new(pos.x, pos.y + _1.h as i32, padding, color, buttons.clone());
-        let _3 = Bar::new(pos.x, _2.pos.y + _2.h as i32, padding, color, buttons);
+        let mut _3_buttons = buttons.clone();
+        _3_buttons[0] = Buttons::sample_send(User::new("polse".to_string(), "123.123.123.123".to_string()));
+        let _3 = Bar::new(pos.x, _2.pos.y + _2.h as i32, padding, color, _3_buttons);
         Self {
+            user,
             bars: vec![_1, _2, _3],
         }
     }
@@ -42,7 +53,6 @@ impl Layout {
             if mouse_within_bar(x, y, b) {
                 b.hover(x, y);
             } else {
-                println!("unhovering, mouse at ({}, {})", x, y);
                 b.unhover();
             }
         }

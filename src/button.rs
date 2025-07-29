@@ -4,9 +4,10 @@ use std::path::Path;
 
 use sdl2::{
     pixels::Color,
- rect::{Point, Rect},
- render::Canvas,
- ttf::{Font, Sdl2TtfContext}, video::Window
+    rect::{Point, Rect},
+    render::Canvas,
+    ttf::Sdl2TtfContext,
+    video::Window
 };
 
 use crate::{chat_client::User, text::Text};
@@ -33,13 +34,13 @@ pub struct SendButton {
     pub h: u32,
     pub color: Option<Color>,
     orig_color: Option<Color>,
-    pub text_content: String,
+    pub text: Option<Text>,
     pub is_hovering: bool,
     pub send_to: User,
 }
 
 impl Buttons {
-    pub fn new(w: u32, h: u32, color: Option<Color>, text: Option<Text>) -> Buttons {
+    pub fn new(w: u32, h: u32, color: Option<Color>) -> Buttons {
         Buttons::Button(Button {
             w,
             h,
@@ -49,14 +50,24 @@ impl Buttons {
         })
     }
 
-    pub fn sample() -> Buttons {
-        Buttons::new(25, 10, Some(sdl2::pixels::Color::GRAY), None)
+    pub fn new_send(w: u32, h: u32, color: Option<Color>, text: Option<Text>, send_to: User) -> Buttons {
+        Buttons::SendButton(SendButton {
+            w, h, color, orig_color: color, text, is_hovering: false, send_to
+        })
     }
 
-    pub fn send_button(font_context: &'static Sdl2TtfContext) -> Buttons {
-        let path = Path::new("fonts/Andale Mono.ttf");
-        let font = font_context.load_font(path, 30).expect("couldn't load font");
-        Buttons::new(25, 10, Some(sdl2::pixels::Color::GRAY), Some(Text::new(font, 12, "Send".to_string())))
+    pub fn sample() -> Buttons {
+        Buttons::new(25, 10, Some(sdl2::pixels::Color::GRAY))
+    }
+
+    pub fn sample_send(user: User) -> Buttons {
+        Buttons::new_send(
+            25,
+            10,
+            Some(sdl2::pixels::Color::GRAY),
+            Some(Text::new("fonts/Andale Mono.ttf".to_string(), 12, "Send".to_string())),
+            user
+        )
     }
 
     fn set_hovering(&mut self, s: bool) {
@@ -75,8 +86,18 @@ impl Buttons {
         let (w, h) = self.get_w_h();
         let res = canvas.fill_rect(Rect::new(pos.x, pos.y, w * s_u, h * s_u));
         canvas.set_draw_color(previous_color);
+        self.draw_text_on(canvas, pos);
         if res.is_err() {
             panic!("{:?}", res.unwrap());
+        }
+    }
+
+    pub fn draw_text_on(&self, canvas: &mut Canvas<Window>, pos: Point) {
+        match self {
+            Buttons::Button(_) => (),
+            Buttons::SendButton(b) => {
+                if let Some(text) = &b.text { text.draw(pos, canvas); }
+            }
         }
     }
 
@@ -160,13 +181,9 @@ impl Button {
     }
 }
 
-pub fn button_print_on_click(_: &mut Button) {
-    println!("Clicked!");
-}
+pub fn button_print_on_click(_: &mut Button) { println!("Clicked!"); }
 
-pub fn button_print_on_hover(_: &mut Button) {
-    println!("Hover!");
-}
+pub fn button_print_on_hover(_: &mut Button) { println!("Hover!"); }
 
 pub fn button_darken_on_hover(b: &mut Buttons) {
     b.set_hovering(true);
@@ -188,6 +205,7 @@ pub fn button_restore_color(b: &mut Buttons) {
 }
 
 pub async fn sample_async_click(_: &mut SendButton) -> reqwest::Result<()> {
-    let _ = reqwest::get("194.163.183.44:8000/api/playercount").await?;
+    let resp = reqwest::get("http://194.163.183.44:8000/api/playercount").await?;
+    println!("response: {:?}", resp);
     Ok(())
 }

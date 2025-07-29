@@ -6,6 +6,7 @@ mod chat_client;
 mod layout;
 mod text;
 
+use chat_client::*;
 use layout::Layout;
 use sdl2::pixels::Color;
 use sdl2::event::{Event, WindowEvent};
@@ -20,6 +21,7 @@ use std::time::Duration;
 pub async fn main() -> reqwest::Result<()> {
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
+    let user = User::new("jonathan_er_sej".to_string(), "0.0.0.0".to_string());
 
     let window = video_subsystem.window("chitchat-rs", 800, 600)
         .position_centered()
@@ -35,8 +37,6 @@ pub async fn main() -> reqwest::Result<()> {
     canvas.present();
     let mut event_pump = sdl_context.event_pump().unwrap();
 
-    let mut layout = Layout::sample();
-
     let font_context = sdl2::ttf::init().expect("failed to create font context");
     let path = Path::new("fonts/Andale Mono.ttf");
     let font = font_context.load_font(path, 30).expect("couldn't load font");
@@ -50,6 +50,9 @@ pub async fn main() -> reqwest::Result<()> {
     let (mut win_width, mut win_height) = canvas.window().size();
     if render_width / win_width != render_height / win_height { panic!("what the heck?"); }
     let mut hidpi_scale = render_width / win_width;
+
+    let another_one = sdl2::ttf::init().unwrap();
+    let mut layout = Layout::sample(user);
 
     'running: loop {
         canvas.set_draw_color(Color::WHITE);
