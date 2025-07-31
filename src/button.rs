@@ -1,7 +1,5 @@
 #![allow(dead_code)]
 
-use std::path::Path;
-
 use sdl2::{
     pixels::Color,
     rect::{Point, Rect},
