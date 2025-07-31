@@ -1,5 +1,5 @@
-use sdl2::{pixels::Color, rect::{Point, Rect}, render::Canvas, surface::Surface, ttf::Font, video::Window};
-use std::path::Path;
+use sdl2::{pixels::Color, rect::{Point, Rect}, render::Canvas, video::Window, ttf::Font};
+use crate::chat_client::ServerInfo;
 
 #[derive(Debug, Clone)]
 pub struct Text {
@@ -13,15 +13,27 @@ impl Text {
         Self { font, font_size, content }
     }
 
-    pub fn draw(&self, pos: Point, canvas: &mut Canvas<Window>) {
-        let ttf_context = sdl2::ttf::init().unwrap();
-        let font = ttf_context.load_font(Path::new(&self.font), self.font_size).unwrap();
+    pub fn draw(&self, pos: Point, canvas: &mut Canvas<Window>, font: &Font) {
         let partial = font.render(self.content.as_str());
-        let surface = partial.solid(Color::BLACK).unwrap();
+        let surface = partial.solid(Color::WHITE).unwrap();
         let tc = canvas.texture_creator();
         let texture = surface.as_texture(&tc).unwrap();
         let info = texture.query();
         canvas.copy(&texture, None, Rect::new(pos.x, pos.y, info.width, info.height)).unwrap();
-        drop(font);
+    }
+
+    pub fn draw_server_info(server_info: &ServerInfo, pos: Point, canvas: &mut Canvas<Window>, font: &Font) {
+        let text = format!("Player count: {}, Status: {}", server_info.player_count, server_info.status);
+        let color = match server_info.status.as_str() {
+            "online" => Color::RGB(67, 181, 129),  // Green for online
+            "offline" => Color::RGB(250, 166, 26),  // Orange for offline  
+            _ => Color::RGB(237, 66, 69),           // Red for error
+        };
+        let partial = font.render(&text);
+        let surface = partial.solid(color).unwrap();
+        let tc = canvas.texture_creator();
+        let texture = surface.as_texture(&tc).unwrap();
+        let info = texture.query();
+        canvas.copy(&texture, None, Rect::new(pos.x, pos.y, info.width, info.height)).unwrap();
     }
 }

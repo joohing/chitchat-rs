@@ -6,11 +6,11 @@ use sdl2::{
     pixels::Color,
     rect::{Point, Rect},
     render::Canvas,
-    ttf::Sdl2TtfContext,
+    ttf::Font,
     video::Window
 };
 
-use crate::{chat_client::User, text::Text};
+use crate::{chat_client::{User, ServerInfo}, text::Text};
 
 #[derive(Debug, Clone)]
 pub enum Buttons {
@@ -62,10 +62,10 @@ impl Buttons {
 
     pub fn sample_send(user: User) -> Buttons {
         Buttons::new_send(
-            25,
-            10,
-            Some(sdl2::pixels::Color::GRAY),
-            Some(Text::new("fonts/Andale Mono.ttf".to_string(), 12, "Send".to_string())),
+            120,
+            35,
+            Some(sdl2::pixels::Color::RGB(74, 144, 226)),
+            Some(Text::new("fonts/Andale Mono.ttf".to_string(), 16, "Check Server".to_string())),
             user
         )
     }
@@ -77,7 +77,7 @@ impl Buttons {
         }
     }
 
-    pub fn draw(&self, canvas: &mut Canvas<Window>, hidpi_scale: u32, pos: Point) {
+    pub fn draw(&self, canvas: &mut Canvas<Window>, hidpi_scale: u32, pos: Point, font: &Font) {
         let (s_u, _) = (hidpi_scale as u32, hidpi_scale as i32);
         let previous_color = canvas.draw_color();
         if let Some(c) = self.get_color() {
@@ -86,17 +86,17 @@ impl Buttons {
         let (w, h) = self.get_w_h();
         let res = canvas.fill_rect(Rect::new(pos.x, pos.y, w * s_u, h * s_u));
         canvas.set_draw_color(previous_color);
-        self.draw_text_on(canvas, pos);
+        self.draw_text_on(canvas, pos, font);
         if res.is_err() {
             panic!("{:?}", res.unwrap());
         }
     }
 
-    pub fn draw_text_on(&self, canvas: &mut Canvas<Window>, pos: Point) {
+    pub fn draw_text_on(&self, canvas: &mut Canvas<Window>, pos: Point, font: &Font) {
         match self {
             Buttons::Button(_) => (),
             Buttons::SendButton(b) => {
-                if let Some(text) = &b.text { text.draw(pos, canvas); }
+                if let Some(text) = &b.text { text.draw(pos, canvas, font); }
             }
         }
     }
@@ -150,17 +150,17 @@ impl Buttons {
         }
     }
 
-    pub async fn click(&mut self, pos: Point) -> reqwest::Result<()> {
+    pub async fn click(&mut self, pos: Point, user: &User, server_info: &mut ServerInfo) -> reqwest::Result<()> {
         match self {
             Buttons::Button(b) => Ok(b.click(pos)),
-            Buttons::SendButton(b) => Ok(b.click().await?),
+            Buttons::SendButton(b) => Ok(b.click(user, server_info).await?),
         }
     }
 }
 
 impl SendButton {
-    async fn click(&mut self) -> reqwest::Result<()> {
-        sample_async_click(self).await?;
+    async fn click(&mut self, user: &User, server_info: &mut ServerInfo) -> reqwest::Result<()> {
+        sample_async_click(self, user, server_info).await?;
         Ok(())
     }
 }
@@ -204,8 +204,8 @@ pub fn button_restore_color(b: &mut Buttons) {
     }
 }
 
-pub async fn sample_async_click(_: &mut SendButton) -> reqwest::Result<()> {
-    let resp = reqwest::get("http://194.163.183.44:8000/api/playercount").await?;
-    println!("response: {:?}", resp);
+pub async fn sample_async_click(_: &mut SendButton, user: &User, server_info: &mut ServerInfo) -> reqwest::Result<()> {
+    *server_info = user.get_server_info().await;
+    println!("Updated server info: Player count: {}, Status: {}", server_info.player_count, server_info.status);
     Ok(())
 }

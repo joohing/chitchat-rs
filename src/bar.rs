@@ -1,10 +1,12 @@
 #![allow(dead_code)]
 
 use crate::button::*;
+use crate::chat_client::{User, ServerInfo};
 use sdl2::{
     pixels::Color,
     rect::{Point, Rect},
     render::Canvas,
+    ttf::Font,
     video::Window,
 };
 
@@ -28,8 +30,16 @@ impl Bar {
         color: Option<Color>,
         buttons: Vec<Buttons>,
     ) -> Bar {
-        let w = buttons.iter().fold(0, |acc, b| b.get_w_h().0 + acc + padding) + padding;
-        let h = buttons.iter().fold(0, |acc, b| std::cmp::max(acc, b.get_w_h().1)) + 2 * padding;
+        let w = if buttons.is_empty() {
+            800  // Full width for header
+        } else {
+            buttons.iter().fold(0, |acc, b| b.get_w_h().0 + acc + padding) + padding
+        };
+        let h = if buttons.is_empty() {
+            60   // Fixed height for header
+        } else {
+            buttons.iter().fold(0, |acc, b| std::cmp::max(acc, b.get_w_h().1)) + 2 * padding
+        };
         Bar {
             pos: Point::new(x, y),
             w,
@@ -60,7 +70,7 @@ impl Bar {
         }
     }
 
-    pub fn draw(&self, canvas: &mut Canvas<Window>, hidpi_scale: u32) {
+    pub fn draw(&self, canvas: &mut Canvas<Window>, hidpi_scale: u32, font: &Font) {
         let (s_u, s_i) = (hidpi_scale as u32, hidpi_scale as i32);
         let previous_color = canvas.draw_color();
         if let Some(c) = self.color {
@@ -84,7 +94,7 @@ impl Bar {
             if let Some(c) = b.get_color() {
                 canvas.set_draw_color(c);
             }
-            b.draw(canvas, s_u, curr_point);
+            b.draw(canvas, s_u, curr_point, font);
             canvas.set_draw_color(curr_color);
             curr_point += Point::new((b.get_w_h().0 + self.padding) as i32 * s_i, 0);
         }
@@ -99,8 +109,8 @@ impl Bar {
         todo!()
     }
 
-    pub async fn click(&mut self, mouse_pos: Point) -> reqwest::Result<()> {
-        sample_click(mouse_pos, self).await?;
+    pub async fn click(&mut self, mouse_pos: Point, user: &User, server_info: &mut ServerInfo) -> reqwest::Result<()> {
+        sample_click(mouse_pos, self, user, server_info).await?;
         Ok(())
     }
 }
@@ -130,7 +140,7 @@ pub fn sample_hover(x: i32, y: i32, bar: &mut Bar) {
     }
 }
 
-pub async fn sample_click(mouse_pos: Point, bar: &mut Bar) -> reqwest::Result<()> {
+pub async fn sample_click(mouse_pos: Point, bar: &mut Bar, user: &User, server_info: &mut ServerInfo) -> reqwest::Result<()> {
     let mut curr_button_location = Point::new(
         bar.pos.x + bar.padding as i32,
         bar.pos.y + bar.padding as i32,
@@ -138,7 +148,7 @@ pub async fn sample_click(mouse_pos: Point, bar: &mut Bar) -> reqwest::Result<()
     for b in bar.buttons.iter_mut() {
         let mouse_on = mouse_within_button(mouse_pos.x, mouse_pos.y, curr_button_location, &b);
         if mouse_on {
-            b.click(mouse_pos).await?;
+            b.click(mouse_pos, user, server_info).await?;
         }
         curr_button_location += Point::new((b.get_w() + bar.padding) as i32, 0);
     }
