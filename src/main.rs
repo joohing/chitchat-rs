@@ -15,7 +15,7 @@ extern crate sdl2;
 
 use sdl2::{EventPump, event::{Event, WindowEvent}, keyboard::{Keycode, TextInputUtil}, render::Canvas, video::Window, ttf::Font};
 use std::{path::Path, time::Duration};
-use crate::{layout::Layout, render::SizeInfo};
+use crate::{layout::Layout, render::SizeInfo, chat::Message};
 
 // Events that may get returned from event handlers that are called in the event_loop function.
 #[derive(PartialEq)]
@@ -66,9 +66,16 @@ fn event_loop(layout: &mut Layout, canvas: &mut Canvas<Window>, font: &Font, eve
 	}
 }
 
-fn handle_event(layout: &mut Layout, canvas: &mut Canvas<Window>, font: &Font, event: &sdl2::event::Event, size_info: &mut SizeInfo, current_input: &mut String, txt_input: &TextInputUtil) -> Events {
-	render::render_layout(canvas, layout, font, size_info, current_input, txt_input);
-	match event {
+fn handle_event(
+	layout: &mut Layout, 
+	canvas: &mut Canvas<Window>, 
+	font: &Font, 
+	event: &sdl2::event::Event, 
+	size_info: &mut SizeInfo, 
+	current_input: &mut String, 
+	txt_input: &TextInputUtil
+) -> Events {
+	let ret = match event {
 		Event::Quit { .. }
 		| Event::KeyDown {
 			keycode: Some(Keycode::Escape),
@@ -81,6 +88,14 @@ fn handle_event(layout: &mut Layout, canvas: &mut Canvas<Window>, font: &Font, e
 			size_info.update_from_canvas(canvas);
 			Events::Resized
 		}
+		Event::KeyDown { keycode: Some(Keycode::Return), .. } => {
+			if let Some(ref mut ct) = layout.selected_contact {
+				ct.history.push(Message::new(current_input.to_string(), true));
+				*current_input = String::new();
+				println!("Message are now: {:?}", ct.history.iter().map(|e| e.content.clone()).collect::<Vec<String>>());
+			}
+			Events::Text
+		}
 		Event::KeyDown { keycode: Some(Keycode::Backspace), .. } => {
 			current_input.pop();
 			Events::Text
@@ -90,5 +105,7 @@ fn handle_event(layout: &mut Layout, canvas: &mut Canvas<Window>, font: &Font, e
 			Events::Text
 		}
 		_ => Events::Unhandled,
-	}
+	};
+	render::render_layout(canvas, layout, font, size_info, current_input, txt_input);
+	ret
 }

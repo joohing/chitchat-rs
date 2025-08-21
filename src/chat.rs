@@ -1,7 +1,7 @@
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Message {
-	content: String,
-	is_own: bool,
+	pub content: String,
+	pub is_own: bool,
 }
 
 impl Message {
@@ -10,4 +10,6 @@ impl Message {
 		let is_own = false;
 		Self { content, is_own }
 	}
+
+	pub fn new(content: String, is_own: bool) -> Self { Self { content, is_own } }
 }
