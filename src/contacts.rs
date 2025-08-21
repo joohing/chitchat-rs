@@ -12,14 +12,10 @@ impl Contact {
 		let addr = "123.123.123.12".to_string();
 		let name = "Sample Guy - OR GIRL!".to_string();
 		let history = vec![Message::sample(), Message::sample(), Message::sample()];
-		Self {
-			addr,
-			name,
-			history,
-		}
+		Self { addr, name, history }
 	}
 
 	pub fn new(addr: String, name: String, history: Vec<Message>) -> Self {
-		Self { addr, name, history, }
+		Self { addr, name, history }
 	}
 }

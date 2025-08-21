@@ -89,6 +89,7 @@ fn handle_event(
 			Events::Scrolled
 		}
 		Event::MouseButtonDown { x, y, .. } => {
+			layout.click(x, y, size_info, hidpi_scaling);
 			Events::Click
 		}
 		Event::Window { win_event: WindowEvent::Resized(x, y), .. } => {
@@ -99,7 +100,6 @@ fn handle_event(
 			if let Some(ref mut ct) = layout.selected_contact && !current_input.is_empty() {
 				ct.history.push(Message::new(current_input.to_string(), true));
 				*current_input = String::new();
-				println!("Messages are now: {:?}", ct.history.iter().map(|e| e.content.clone()).collect::<Vec<String>>());
 			}
 			Events::Text
 		}
