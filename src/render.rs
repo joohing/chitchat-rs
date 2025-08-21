@@ -86,22 +86,39 @@ fn render_contact_pane(
 	let pos_increase_each_iter = Point::new(0, (h + CONTACT_PADDING) as i32);
 	if let Some(c) = selected_contact {
 		for ct in contacts {
-			render_contact(canvas, ct, &contact_curr_pos, size_info, c.addr == ct.addr);
+			render_contact(canvas, ct, font, &contact_curr_pos, size_info, c.addr == ct.addr);
 			contact_curr_pos += pos_increase_each_iter;
 		}
 	} else {
 		for ct in contacts {
-			render_contact(canvas, ct, &contact_curr_pos, size_info, false);
+			render_contact(canvas, ct, font, &contact_curr_pos, size_info, false);
 			contact_curr_pos += pos_increase_each_iter;
 		}
 	}
 }
 
-fn render_contact(canvas: &mut Canvas<Window>, contact: &Contact, pos: &Point, size_info: &SizeInfo, is_selected: bool) {
+fn render_contact(
+	canvas: &mut Canvas<Window>, 
+	contact: &Contact, 
+	font: &Font,
+	pos: &Point, 
+	size_info: &SizeInfo, 
+	is_selected: bool
+) {
 	let (w, h) = size_info.contact;
 	let color = if is_selected { CONTACT_COLOR_SEL } else { CONTACT_COLOR };
 	canvas.set_draw_color(color);
 	canvas.fill_rect(Rect::new(pos.x, pos.y, w, h));
+
+	let partial = font.render(contact.name.as_str());
+	let solid = partial.solid(CHAT_PANE_TEXT_COLOR).unwrap();
+	let tc = canvas.texture_creator();
+	let texture = solid.as_texture(&tc).unwrap();
+	let text_query = texture.query();
+
+	let (name_x, name_y) = (pos.x + CONTACT_PADDING as i32, pos.y + CONTACT_PADDING as i32);
+
+	canvas.copy(&texture, None, Rect::new(name_x, name_y, text_query.width, text_query.height)).unwrap();
 }
 
 /// Use the selected contact to draw a chat pane.
