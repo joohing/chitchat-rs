@@ -23,6 +23,7 @@ enum Events {
 	Quit,
 	Click,
 	Resized,
+	Scrolled,
 	Text,
 	Unhandled,
 }
@@ -54,11 +55,12 @@ pub fn main() {
 fn event_loop(layout: &mut Layout, canvas: &mut Canvas<Window>, font: &Font, event_pump: &mut EventPump, txt_input: &TextInputUtil) {
 	let mut size_info = SizeInfo::from_canvas(canvas);
 	let mut current_input = String::new();
+	let mut hidpi_scaling = (canvas.window().drawable_size().0 / canvas.window().size().0) as i32;
 	render::render_layout(canvas, layout, font, &mut size_info, &current_input, txt_input);
 
 	'running: loop {
 		for event in event_pump.poll_iter() {
-			if Events::Quit == handle_event(layout, canvas, font, &event, &mut size_info, &mut current_input, txt_input) {
+			if Events::Quit == handle_event(layout, canvas, font, &event, &mut size_info, hidpi_scaling, &mut current_input, txt_input) {
 				break 'running;
 			}
 		}
@@ -72,6 +74,7 @@ fn handle_event(
 	font: &Font, 
 	event: &sdl2::event::Event, 
 	size_info: &mut SizeInfo, 
+	hidpi_scaling: i32,
 	current_input: &mut String, 
 	txt_input: &TextInputUtil
 ) -> Events {
@@ -81,6 +84,10 @@ fn handle_event(
 			keycode: Some(Keycode::Escape),
 			..
 		} => Events::Quit,
+		Event::MouseWheel { mouse_x, mouse_y, y, .. } => {
+			layout.scroll(mouse_x, mouse_y, size_info, y, hidpi_scaling);
+			Events::Scrolled
+		}
 		Event::MouseButtonDown { x, y, .. } => {
 			Events::Click
 		}
@@ -89,10 +96,10 @@ fn handle_event(
 			Events::Resized
 		}
 		Event::KeyDown { keycode: Some(Keycode::Return), .. } => {
-			if let Some(ref mut ct) = layout.selected_contact {
+			if let Some(ref mut ct) = layout.selected_contact && !current_input.is_empty() {
 				ct.history.push(Message::new(current_input.to_string(), true));
 				*current_input = String::new();
-				println!("Message are now: {:?}", ct.history.iter().map(|e| e.content.clone()).collect::<Vec<String>>());
+				println!("Messages are now: {:?}", ct.history.iter().map(|e| e.content.clone()).collect::<Vec<String>>());
 			}
 			Events::Text
 		}

@@ -56,10 +56,10 @@ pub fn render_layout(
 	current_input: &str,
 	txt_input: &TextInputUtil,
 ) {
-	render_contact_pane(canvas, &layout.contacts, &layout.selected_contact, size_info, font);
+	render_contact_pane(canvas, &layout.contacts, &layout.selected_contact, size_info, font, layout.contact_scroll_state);
 	if let Some(ref contact) = layout.selected_contact {
 		if !txt_input.is_active() { txt_input.start(); }
-		render_chat_pane(canvas, contact, font, size_info, current_input, txt_input);
+		render_chat_pane(canvas, contact, font, size_info, current_input, layout.chat_scroll_state);
 	} else {
 		if txt_input.is_active() { txt_input.stop(); }
 		render_welcome_screen(canvas, font, size_info);
@@ -73,7 +73,8 @@ fn render_contact_pane(
 	contacts: &Vec<Contact>,
 	selected_contact: &Option<Contact>,
 	size_info: &SizeInfo,
-	font: &Font
+	font: &Font,
+	scroll_state: i32, // TODO use
 ) {
 	let (pane_width, pane_height) = size_info.contact_pane;
 	canvas.set_draw_color(CONTACT_PANE_COLOR);
@@ -108,7 +109,7 @@ fn render_contact(
 	let (w, h) = size_info.contact;
 	let color = if is_selected { CONTACT_COLOR_SEL } else { CONTACT_COLOR };
 	canvas.set_draw_color(color);
-	canvas.fill_rect(Rect::new(pos.x, pos.y, w, h));
+	canvas.fill_rect(Rect::new(pos.x, pos.y, w, h)).expect("could not fill rect for contact");
 
 	let partial = font.render(contact.name.as_str());
 	let solid = partial.solid(CHAT_PANE_TEXT_COLOR).unwrap();
@@ -128,23 +129,20 @@ fn render_chat_pane(
 	font: &Font,
 	size_info: &SizeInfo,
 	current_input: &str,
-	txt_input: &TextInputUtil,
+	scroll_state: i32,
 ) {
 	let x_pos = size_info.contact_pane.0 as i32;
 	let (pane_width, pane_height) = size_info.chat_pane;
 	canvas.set_draw_color(CHAT_PANE_COLOR);
-	canvas.fill_rect(Rect::new(x_pos, 0, pane_width, pane_height));
+	canvas.fill_rect(Rect::new(x_pos, 0, pane_width, pane_height)).expect("could not fill rect for chat pane");
 
+	render_chat_messages(canvas, &selected_contact.history, font, size_info, scroll_state);
 	render_title_bar(canvas, selected_contact, font, size_info);
-
-	// TODO how to scroll?
-	render_chat_messages(canvas, &selected_contact.history, font, size_info);
-
-	render_input_bar(canvas, selected_contact, font, size_info, current_input, txt_input);
+	render_input_bar(canvas, font, size_info, current_input);
 }
 
-fn render_chat_messages(canvas: &mut Canvas<Window>, history: &Vec<Message>, font: &Font, size_info: &SizeInfo) {
-	let mut h = size_info.chat_title.1 + CHAT_MESSAGE_PADDING;
+fn render_chat_messages(canvas: &mut Canvas<Window>, history: &Vec<Message>, font: &Font, size_info: &SizeInfo, scroll_state: i32) {
+	let mut h = (size_info.chat_title.1 + CHAT_MESSAGE_PADDING) as i32 - scroll_state;
 	for message in history {
 		h = render_message_bubble(canvas, &message, font, size_info, h);
 	}
@@ -156,8 +154,8 @@ fn render_message_bubble(
 	message: &Message, 
 	font: &Font, 
 	size_info: &SizeInfo, 
-	h: u32
-) -> u32 {
+	h: i32
+) -> i32 {
 	let partial = font.render(&message.content);
 	let solid = partial.blended_wrapped(CHAT_PANE_TEXT_COLOR, size_info.chat_message_max_width).unwrap();
 	let tc = canvas.texture_creator();
@@ -167,23 +165,23 @@ fn render_message_bubble(
 	let msg_color = if message.is_own { CHAT_MESSAGE_OWN_COLOR } else { CHAT_MESSAGE_COLOR };
 	canvas.set_draw_color(msg_color);
 
-	let (canvas_width, canvas_height) = canvas.output_size().expect("could not get output size of canvas when trying to render message bubble");
+	let (canvas_width, _) = canvas.output_size().expect("could not get output size of canvas when trying to render message bubble");
 	let x_pos = if message.is_own { (canvas_width - (text_query.width + CHAT_MESSAGE_PADDING * 2)) as i32 } else { (size_info.contact_pane.0 + CHAT_MESSAGE_PADDING) as i32 };
 
 	let (rect_x, rect_y) = (x_pos, h as i32);
 	let (rect_w, rect_h) = (text_query.width + CHAT_MESSAGE_PADDING * 2, text_query.height + CHAT_MESSAGE_PADDING * 2);
-	let (text_x, text_y) = (x_pos + CHAT_MESSAGE_PADDING as i32, (h + CHAT_MESSAGE_PADDING) as i32);
+	let (text_x, text_y) = (x_pos + CHAT_MESSAGE_PADDING as i32, h + CHAT_MESSAGE_PADDING as i32);
 
-	canvas.fill_rect(Rect::new(rect_x, rect_y, rect_w, rect_h));
+	canvas.fill_rect(Rect::new(rect_x, rect_y, rect_w, rect_h)).expect("could not fill rect for message bubble");
 	canvas.copy(&texture, None, Rect::new(text_x, text_y, text_query.width, text_query.height)).unwrap();
-	h + rect_h + CHAT_MESSAGE_PADDING
+	h + (rect_h + CHAT_MESSAGE_PADDING) as i32
 }
 
 fn render_title_bar(canvas: &mut Canvas<Window>, selected_contact: &Contact, font: &Font, size_info: &SizeInfo) {
 	let x_pos = size_info.contact_pane.0 as i32;
 	let (width, height) = size_info.chat_title;
 	canvas.set_draw_color(CHAT_TITLE_COLOR);
-	canvas.fill_rect(Rect::new(x_pos, 0, width, height));
+	canvas.fill_rect(Rect::new(x_pos, 0, width, height)).expect("could not fill rect for chat title bar");
 
 	let partial = font.render(selected_contact.name.as_str());
 	let solid = partial.solid(CHAT_PANE_TEXT_COLOR).unwrap();
@@ -197,20 +195,18 @@ fn render_title_bar(canvas: &mut Canvas<Window>, selected_contact: &Contact, fon
 
 fn render_input_bar(
 	canvas: &mut Canvas<Window>, 
-	selected_contact: &Contact, 
 	font: &Font, 
 	size_info: &SizeInfo, 
 	current_input: &str,
-	txt_input: &TextInputUtil
 ) {
 	let (width, height) = size_info.chat_input;
 	let x_pos = size_info.contact_pane.0 as i32;
 	let y_pos = (size_info.contact_pane.1 - height) as i32;
 	canvas.set_draw_color(CHAT_TITLE_COLOR);
-	canvas.fill_rect(Rect::new(x_pos, y_pos, width, height));
+	canvas.fill_rect(Rect::new(x_pos, y_pos, width, height)).expect("could not fill rect for input bar");
 
-	if current_input.is_empty() { return; }
-	let partial = font.render(current_input);
+	let input_with_cursor_after = current_input.to_owned() + "|";
+	let partial = font.render(&input_with_cursor_after);
 	let solid = partial.solid(CHAT_PANE_TEXT_COLOR).unwrap();
 	let tc = canvas.texture_creator();
 	let texture = solid.as_texture(&tc).unwrap();
@@ -227,7 +223,7 @@ fn render_welcome_screen(canvas: &mut Canvas<Window>, font: &Font, size_info: &S
 	let x_pos = size_info.contact_pane.0 as i32;
 	let (pane_width, pane_height) = size_info.chat_pane;
 	canvas.set_draw_color(CHAT_PANE_COLOR);
-	canvas.fill_rect(Rect::new(x_pos, 0, pane_width, pane_height));
+	canvas.fill_rect(Rect::new(x_pos, 0, pane_width, pane_height)).expect("could not fill rect for welcome screen");
 
 	let partial = font.render("Welcome to `chitchat-rs`!");
 	let solid = partial.solid(CHAT_PANE_TEXT_COLOR).unwrap();
