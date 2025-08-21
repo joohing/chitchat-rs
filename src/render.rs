@@ -165,12 +165,13 @@ fn render_message_bubble(
 	let msg_color = if message.is_own { CHAT_MESSAGE_OWN_COLOR } else { CHAT_MESSAGE_COLOR };
 	canvas.set_draw_color(msg_color);
 
-	let (canvas_width, _) = canvas.output_size().expect("could not get output size of canvas when trying to render message bubble");
-	let x_pos = if message.is_own { (canvas_width - (text_query.width + CHAT_MESSAGE_PADDING * 2)) as i32 } else { (size_info.contact_pane.0 + CHAT_MESSAGE_PADDING) as i32 };
-
-	let (rect_x, rect_y) = (x_pos, h as i32);
 	let (rect_w, rect_h) = (text_query.width + CHAT_MESSAGE_PADDING * 2, text_query.height + CHAT_MESSAGE_PADDING * 2);
+
+	let (canvas_width, _) = canvas.output_size().expect("could not get output size of canvas when trying to render message bubble");
+	let x_pos = if message.is_own { (canvas_width - (rect_w + CHAT_MESSAGE_PADDING)) as i32 } else { (size_info.contact_pane.0 + CHAT_MESSAGE_PADDING) as i32 };
+
 	let (text_x, text_y) = (x_pos + CHAT_MESSAGE_PADDING as i32, h + CHAT_MESSAGE_PADDING as i32);
+	let (rect_x, rect_y) = (x_pos, h as i32);
 
 	canvas.fill_rect(Rect::new(rect_x, rect_y, rect_w, rect_h)).expect("could not fill rect for message bubble");
 	canvas.copy(&texture, None, Rect::new(text_x, text_y, text_query.width, text_query.height)).unwrap();
