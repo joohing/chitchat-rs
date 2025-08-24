@@ -1,4 +1,6 @@
-// In: some layout and a canvas, out: SizeInfo, result: layout drawn on canvas.
+// In: some layout and a canvas
+// Out: SizeInfo
+// Result: layout drawn on canvas.
 mod render;
 
 // Relates the contacts and the chat to each other: contains info about their current contents.
@@ -15,7 +17,7 @@ extern crate sdl2;
 
 use sdl2::{EventPump, event::{Event, WindowEvent}, keyboard::{Keycode, TextInputUtil}, render::Canvas, video::Window, ttf::Font};
 use std::{path::Path, time::Duration};
-use crate::{layout::Layout, render::SizeInfo, chat::Message};
+use crate::{layout::Layout, render::SizeInfo};
 
 // Events that may get returned from event handlers that are called in the event_loop function.
 #[derive(PartialEq)]
@@ -25,6 +27,7 @@ enum Events {
 	Resized,
 	Scrolled,
 	Text,
+	SentMessage,
 	Unhandled,
 }
 
@@ -78,6 +81,7 @@ fn handle_event(
 	current_input: &mut String, 
 	txt_input: &TextInputUtil
 ) -> Events {
+	size_info.update_from_canvas_and_layout(canvas, layout, font, hidpi_scaling);
 	let ret = match event {
 		Event::Quit { .. }
 		| Event::KeyDown {
@@ -92,16 +96,10 @@ fn handle_event(
 			layout.click(x, y, size_info, hidpi_scaling);
 			Events::Click
 		}
-		Event::Window { win_event: WindowEvent::Resized(x, y), .. } => {
-			size_info.update_from_canvas(canvas);
-			Events::Resized
-		}
 		Event::KeyDown { keycode: Some(Keycode::Return), .. } => {
-			if let Some(ref mut ct) = layout.selected_contact && !current_input.is_empty() {
-				ct.history.push(Message::new(current_input.to_string(), true));
-				*current_input = String::new();
-			}
-			Events::Text
+			layout.send(size_info, current_input);
+			*current_input = String::new();
+			Events::SentMessage
 		}
 		Event::KeyDown { keycode: Some(Keycode::Backspace), .. } => {
 			current_input.pop();

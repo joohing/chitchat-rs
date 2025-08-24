@@ -1,5 +1,4 @@
-use crate::{contacts::*, render::CONTACT_PADDING, SizeInfo};
-use sdl2::rect::Point;
+use crate::{contacts::*, render::CONTACT_PADDING, SizeInfo, chat::Message};
 
 const SCROLL_SENSITIVITY: i32 = 5;
 
@@ -38,6 +37,7 @@ impl Layout {
 					let addr = &ct.addr;
 					let old = self.contacts.iter_mut().find(|c| &c.addr == addr).expect("currently selected does not exist");
 					*old = ct.clone();
+					self.scroll_chat_to_bottom(size_info);
 				}
 				if i < self.contacts.len() as i32 {
 					self.selected_contact = self.contacts.get(i as usize).cloned()
@@ -57,6 +57,19 @@ impl Layout {
 		}
 		self.chat_scroll_state = self.chat_scroll_state.max(0);
 		self.contact_scroll_state = self.contact_scroll_state.max(0);
+	}
+
+	pub fn send(&mut self, size_info: &SizeInfo, current_input: &str) {
+		if let Some(ref mut ct) = self.selected_contact && !current_input.is_empty() {
+			ct.history.push(Message::new(current_input.to_string(), true));
+			self.scroll_chat_to_bottom(size_info);
+		}
+	}
+
+	pub fn scroll_chat_to_bottom(&mut self, size_info: &SizeInfo) {
+		let res = (size_info.chat_total_height - ((size_info.chat_input.1 + size_info.chat_pane.1) as i32)).max(0);
+		println!("scrolling to {}", res);
+		self.chat_scroll_state = res as i32;
 	}
 }
 

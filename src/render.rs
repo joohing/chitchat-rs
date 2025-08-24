@@ -19,6 +19,7 @@ pub struct SizeInfo {
 	pub plus_button: (u32, u32),
 	pub chat_pane: (u32, u32),
 	pub chat_message_max_width: u32,
+	pub chat_total_height: i32,
 	pub chat_title: (u32, u32),
 	pub chat_input: (u32, u32),
 }
@@ -33,10 +34,11 @@ impl SizeInfo {
 		let chat_message_max_width = chat_pane.0 - chat_pane.0 / 3;
 		let chat_title             = (chat_pane.0, 75);
 		let chat_input             = (chat_pane.0, 75);
-		Self { contact_pane, contact, plus_button, chat_pane, chat_message_max_width, chat_title, chat_input }
+		let chat_total_height      = 0;
+		Self { contact_pane, contact, plus_button, chat_pane, chat_message_max_width, chat_title, chat_input, chat_total_height }
 	}
 
-	pub fn update_from_canvas(&mut self, canvas: &Canvas<Window>) {
+	pub fn update_from_canvas_and_layout(&mut self, canvas: &Canvas<Window>, layout: &Layout, font: &Font, hidpi_scaling: i32) {
 		let updated                 = Self::from_canvas(canvas);
 		self.contact_pane           = updated.contact_pane;
 		self.contact                = updated.contact;
@@ -45,6 +47,12 @@ impl SizeInfo {
 		self.chat_message_max_width = updated.chat_message_max_width;
 		self.chat_title             = updated.chat_title;
 		self.chat_input             = updated.chat_input;
+		let chat_total_height = if let Some(ref ct) = layout.selected_contact {
+			get_messages_height(&ct.history, self, font, hidpi_scaling)
+		} else {
+			0
+		};
+		self.chat_total_height      = chat_total_height;
 	}
 }
 
@@ -122,7 +130,7 @@ fn render_contact(
 	canvas.copy(&texture, None, Rect::new(name_x, name_y, text_query.width, text_query.height)).unwrap();
 }
 
-/// Use the selected contact to draw a chat pane.
+/// Use the selected contact to draw a chat pane. Returns the height of all messages stacked in pixels.
 fn render_chat_pane(
 	canvas: &mut Canvas<Window>,
 	selected_contact: &Contact,
@@ -136,11 +144,12 @@ fn render_chat_pane(
 	canvas.set_draw_color(CHAT_PANE_COLOR);
 	canvas.fill_rect(Rect::new(x_pos, 0, pane_width, pane_height)).expect("could not fill rect for chat pane");
 
-	render_chat_messages(canvas, &selected_contact.history, font, size_info, scroll_state);
+	let messages_height = render_chat_messages(canvas, &selected_contact.history, font, size_info, scroll_state);
 	render_title_bar(canvas, selected_contact, font, size_info);
 	render_input_bar(canvas, font, size_info, current_input);
 }
 
+/// Returns the final height of the messages, used for scrolling to bottom.
 fn render_chat_messages(canvas: &mut Canvas<Window>, history: &Vec<Message>, font: &Font, size_info: &SizeInfo, scroll_state: i32) {
 	let mut h = (size_info.chat_title.1 + CHAT_MESSAGE_PADDING) as i32 - scroll_state;
 	for message in history {
@@ -234,4 +243,18 @@ fn render_welcome_screen(canvas: &mut Canvas<Window>, font: &Font, size_info: &S
 	let (text_x, text_y) = (x_pos + ((pane_width - text_query.width) / 2) as i32, ((pane_height - text_query.height) / 2) as i32);
 
 	canvas.copy(&texture, None, Rect::new(text_x, text_y, text_query.width, text_query.height)).unwrap();
+}
+
+fn get_messages_height(messages: &Vec<Message>, size_info: &SizeInfo, font: &Font, hidpi_scaling: i32) -> i32 {
+	let one_message_height_overhead = 4 * CHAT_MESSAGE_PADDING as i32;
+	let mut total_height = messages.len() as i32 * one_message_height_overhead;
+
+	for message in messages {
+		let (curr_width, curr_height) = font.size_of(&message.content).expect("could not get size of text in get_messages_height");
+		let height_of_message = (curr_height * curr_width / size_info.chat_message_max_width) as i32;
+		total_height += height_of_message;
+	}
+
+	println!("total height of {} messages: {}", messages.len(), total_height);
+	total_height / hidpi_scaling
 }
